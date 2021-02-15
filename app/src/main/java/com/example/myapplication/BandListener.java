@@ -36,5 +36,9 @@ public interface BandListener {
      */
     public void connectFail();
 
+    /**
+     * 리스너가 사용가능한 상태인지 반환
+     * @return
+     */
     public boolean available();
 }

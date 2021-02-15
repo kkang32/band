@@ -31,6 +31,8 @@ public class HandleBandListener extends BandResultCode implements BandListener  
     public static final int CONNECTED = 19;
     public static final int DISCONNECTED = 20;
 
+
+
     public HandleBandListener(){
     }
 
@@ -96,6 +98,8 @@ public class HandleBandListener extends BandResultCode implements BandListener  
             mHandler.sendMessage(message);
         }
     }
+
+
 
     @Override
     public boolean available() {

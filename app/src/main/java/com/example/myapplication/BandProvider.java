@@ -101,7 +101,9 @@ public class BandProvider {
                     if(connectionState.equals(ConnectionState.CONNECTED)){
                         Log.d(TAG, "success connect");
                         bandListener.connectedBand();
+                        NotificationUtil.cancel(NotificationUtil.ID_ALERT, mContext);
                         NotificationUtil.notification(NotificationUtil.ID_HEARTBEATCHECK, "HI-U", "심박수 체크 중 입니다.", mContext);
+
                     }else if(connectionState.equals(ConnectionState.DISCONNECTED)){
 
                         //요청된 disconnect이면 정상 처리
@@ -113,7 +115,6 @@ public class BandProvider {
                             NotificationUtil.notification(NotificationUtil.ID_HEARTBEATCHECK, "HI-U", "심박수 체크 준비 중 입니다.", mContext);
                             NotificationUtil.notification(NotificationUtil.ID_ALERT, "HI-U", "밴드와의 연결이 해제 되었습니다. 다시 연결해 주세요.", mContext);
                         }
-
                     }
                     break;
                 case BandResultCode.BAND_CONNECTION_FAIL : //밴드 연결 실패

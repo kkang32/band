@@ -53,6 +53,8 @@ public class MainActivity extends AppCompatActivity {
     //bound 상태를 저장할 변수
     private boolean mBound;
 
+    private boolean nowInit = false;
+
 
     private final Handler mHandler = new Handler(Looper.getMainLooper()){
         String TAG = getClass().getName();
@@ -71,8 +73,13 @@ public class MainActivity extends AppCompatActivity {
                     Log.d(TAG, "completed find device");
                     break;
 
-                case HandleBandListener.BLUETOOTH_DISABLE: //블루투스 비활성화됨(mclient에서 보냄)
+                case HandleBandListener.BLUETOOTH_DISABLE: //블루투스 비활성화됨(서비스, mclient에서 보냄)
                     Log.d(TAG, "disabledBluetooth");
+                    initWidget();
+                    //bluetooth 재연결 유도
+                    if (checkPermission()){
+                        return;
+                    }
                     break;
 
                 case HandleBandListener.CONNECTED: 
@@ -92,8 +99,13 @@ public class MainActivity extends AppCompatActivity {
                     Toast.makeText(mContext, TAG, Toast.LENGTH_SHORT).show();
                     //BandManager.unregisterBand(mContext); //사용자가 밴드 바로 연결을 시도 했으나 밴드 연결하지 못함. 등록된 밴드 삭제
                     break;
-                case HandleBandListener.BAND_DISCONNECD: //이벤트에서 발생함. 예를들어 멀리 떨어지는 경우 발생함
+                case HandleBandListener.BAND_DISCONNECD: //이벤트, 서비스에서 발생함. 예를들어 멀리 떨어지는 경우 발생함
                     Log.d(TAG, " disconnected!!!! ");
+                    initWidget(); //위젯 초기화
+                    break;
+                case HandleBandListener.BAND_RECONNECTING: //서비스에서 재연결시 발생
+                    Log.d(TAG, " reconnected ");
+                    initWidget();
                     break;
             }
         }
@@ -112,7 +124,19 @@ public class MainActivity extends AppCompatActivity {
                 if (!bandProvider.getBandListener().available()){ //서비스에서 직접 생성한 provider라면 listener에 연결된 handler가 없다. 별도로 생성해 준다.
                     bandProvider.setBandListener(new HandleBandListener(mHandler));
                 }
+            }else{
+                bandProvider = new BandProvider(mContext, new HandleBandListener(mHandler));
+                mService.setBandProvider(bandProvider);
             }
+
+            //서비스에서 activity의 화면을 제어하기위해 handler전달
+            mService.setmHandler(mHandler);
+
+            //serviceConnection은 resume에서만 수행되므로 블루투스 활성화를 완료 했음을 service에 알린다.
+            if (mService.isSendRequestBluetoothConnect()){
+                mService.setSendRequestBluetoothConnect(false);
+            }
+
             initWidget();
         }
 
@@ -233,11 +257,11 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-
-
         if (checkPermission()){
             return;
         }
+
+
     }
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -267,9 +291,17 @@ public class MainActivity extends AppCompatActivity {
         super.onResume();
         Log.d("onresume","resume!!");
         Intent intent = new Intent(this, BandService.class);
+        if (mService != null){
+            if (mService.isSendRequestBluetoothConnect()){
+                mService.setSendRequestBluetoothConnect(false);
+            }
+        }
+
         bindService(intent, mConnection, BIND_AUTO_CREATE);
+
+
         //bandProvider는 항상 service에서 생성한 것을 사용한다.
-        initWidget();
+        //initWidget();
     }
 
     @Override
@@ -300,6 +332,7 @@ public class MainActivity extends AppCompatActivity {
 
 
     private void initWidget(){
+
         boolean enabled = BluetoothUtil.canUseBluetooth(this);
         buttonSearchBand.setEnabled(enabled);
         buttonStartService.setEnabled(enabled);
@@ -324,6 +357,8 @@ public class MainActivity extends AppCompatActivity {
                 buttonDisconnectRegistered.setEnabled(false);
             }
         }
+
+
 
     }
 
